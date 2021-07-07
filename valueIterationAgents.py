@@ -192,4 +192,48 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        states = self.mdp.getStates();
+        pq = util.PriorityQueue()
+        predecessors = {state: [] for state in states}
+
+        for state in states:
+            actions = self.mdp.getPossibleActions(state)
+
+            for action in actions:
+                next_states_and_probs = self.mdp.getTransitionStatesAndProbs(state, action)
+
+                for next_state, prob in next_states_and_probs:
+                    if prob:
+                        if state not in predecessors[next_state]:
+                            predecessors[next_state].append(state)
+
+        # initialiase pqueue to 0
+
+        for s in states:
+            if not self.mdp.isTerminal(s):
+                actions = self.mdp.getPossibleActions(s)
+                q_values = [self.computeQValueFromValues(s, a) for a in actions]
+                q_values.sort()
+                max_q_value = q_values[-1]
+                diff = abs(self.values[s] - max_q_value)
+                pq.update(s, -diff)
+
+        for i in range(self.iterations):
+            if pq.isEmpty():
+                return
+            s = pq.pop()
+
+            actions = self.mdp.getPossibleActions(s)
+            q_values = [self.computeQValueFromValues(s, a) for a in actions]
+            q_values.sort()
+            self.values[s] = q_values[-1]
+
+            for p in predecessors[s]:
+                moves = self.mdp.getPossibleActions(p)
+                p_values = [self.computeQValueFromValues(p, a) for a in moves]
+                p_values.sort()
+                max_p_value = p_values[-1]
+                diff = abs(max_p_value - self.values[p])
+                if diff > self.theta:
+                    pq.update(p, -diff)
 
